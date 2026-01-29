@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { PsychologistBrowser } from "@/components/patient/PsychologistBrowser";
 import { PendingRequests } from "@/components/psychologist/PendingRequests";
 import { AppointmentsList } from "@/components/appointments/AppointmentsList";
+import { SessionRequestsList } from "@/components/patient/SessionRequestsList";
 import { PsychologistDebug } from "@/components/debug/PsychologistDebug";
 
 export default function DashboardPage() {
@@ -42,6 +43,7 @@ export default function DashboardPage() {
         </div>
       ) : (
         <div className="space-y-8">
+            <SessionRequestsList />
             <AppointmentsList />
             <div>
                 <h2 className="text-xl font-bold mb-4">Find a Psychologist</h2>

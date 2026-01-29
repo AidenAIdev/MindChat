@@ -1,78 +1,98 @@
-"use client";
+'use client';
 
-import { cn } from "@/lib/utils";
-import { LayoutDashboard, MessageSquare, Calendar, User, LogOut, Users } from "lucide-react";
-import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { useAuthStore } from "@/lib/store/auth.store";
-import { motion } from "framer-motion";
+import { usePathname, useRouter } from 'next/navigation';
+import { useAuthStore } from '@/lib/store/auth.store';
+import {
+  LayoutDashboard,
+  MessageSquare,
+  Calendar,
+  User,
+  LogOut,
+  Users
+} from 'lucide-react';
+
+const patientNavigation = [
+  { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
+  { name: 'Find Psychologists', href: '/dashboard', icon: Users },
+  { name: 'My Sessions', href: '/dashboard', icon: MessageSquare },
+  { name: 'Appointments', href: '/appointments', icon: Calendar },
+  { name: 'Profile', href: '/profile', icon: User },
+];
+
+const psychologistNavigation = [
+  { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
+  { name: 'Pending Requests', href: '/dashboard', icon: MessageSquare },
+  { name: 'My Patients', href: '/my-patients', icon: Users },
+  { name: 'Appointments', href: '/appointments', icon: Calendar },
+  { name: 'Profile', href: '/profile', icon: User },
+];
 
 export function Sidebar() {
   const pathname = usePathname();
-  const logout = useAuthStore((state) => state.logout);
-  const user = useAuthStore((state) => state.user);
+  const router = useRouter();
+  const user = useAuthStore(state => state.user);
+  const logout = useAuthStore(state => state.logout);
 
-  // Different sidebar items for patient vs psychologist
-  const sidebarItems = user?.userType === 'psychologist' 
-    ? [
-        { icon: LayoutDashboard, label: "Dashboard", href: "/dashboard" },
-        { icon: MessageSquare, label: "Chat", href: "/chat" },
-        { icon: Calendar, label: "Appointments", href: "/appointments" },
-        { icon: Users, label: "My Patients", href: "/patients" },
-        { icon: User, label: "Profile", href: "/profile" },
-      ]
-    : [
-        { icon: LayoutDashboard, label: "Dashboard", href: "/dashboard" },
-        { icon: Users, label: "Psychologists", href: "/psychologists" },
-        { icon: MessageSquare, label: "Chat", href: "/chat" },
-        { icon: Calendar, label: "Appointments", href: "/appointments" },
-        { icon: User, label: "Profile", href: "/profile" },
-      ];
+  // Fallback to patient navigation if user role is not explicitly 'Psychologist'
+  const navigation = (user?.role === 'Psychologist' || user?.userType === 'psychologist')
+    ? psychologistNavigation
+    : patientNavigation;
+
+  const handleLogout = () => {
+    logout();
+    router.push('/login');
+  };
 
   return (
-    <aside className="fixed left-0 top-0 h-screen w-64 hidden md:flex flex-col bg-white/5 backdrop-blur-xl border-r border-white/10 z-50">
-      <div className="p-6">
-        <h1 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-600 to-blue-500">
+    <div className="fixed inset-y-0 left-0 z-50 w-64 backdrop-blur-xl bg-black/40 border-r border-white/20">
+      {/* Logo */}
+      <div className="flex h-16 items-center px-6 border-b border-white/20">
+        <h1 className="text-2xl font-bold bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">
           MindChat
         </h1>
       </div>
 
-      <nav className="flex-1 px-4 space-y-2">
-        {sidebarItems.map((item) => {
-          const isActive = pathname.startsWith(item.href);
+      {/* Navigation */}
+      <nav className="flex-1 space-y-1 px-3 py-4">
+        {navigation.map((item) => {
+          const isActive = pathname === item.href;
+
           return (
-            <Link key={item.href} href={item.href}>
-              <div
-                className={cn(
-                  "flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 relative",
-                  isActive
-                    ? "bg-gradient-to-r from-purple-500/20 to-blue-500/20 text-purple-600 border border-purple-500/10"
-                    : "text-muted-foreground hover:bg-white/5 hover:text-foreground"
-                )}
-              >
-                <item.icon size={20} />
-                <span className="font-medium">{item.label}</span>
-                {isActive && (
-                  <motion.div
-                    layoutId="activeTab"
-                    className="absolute left-0 w-1 h-8 bg-purple-500 rounded-r-full"
-                  />
-                )}
-              </div>
-            </Link>
+            <button
+              key={item.name}
+              onClick={() => router.push(item.href)}
+              className={`
+                flex items-center gap-3 w-full px-3 py-2 rounded-lg
+                transition-all duration-200
+                ${isActive
+                  ? 'bg-gradient-to-r from-purple-600 to-blue-600 text-white'
+                  : 'text-gray-300 hover:bg-white/10'
+                }
+              `}
+            >
+              <item.icon className="w-5 h-5" />
+              <span>{item.name}</span>
+            </button>
           );
         })}
       </nav>
 
-      <div className="p-4 border-t border-white/10">
+      {/* User Info & Logout */}
+      <div className="border-t border-white/20 p-4">
+        <div className="mb-3 px-3">
+          <p className="text-sm text-gray-400">Logged in as</p>
+          <p className="font-semibold text-white truncate">{user?.email}</p>
+          <p className="text-xs text-purple-400">{user?.role || user?.userType}</p>
+        </div>
+
         <button
-          onClick={logout}
-          className="flex items-center gap-3 px-4 py-3 w-full rounded-xl text-muted-foreground hover:bg-red-500/10 hover:text-red-500 transition-all duration-300"
+          onClick={handleLogout}
+          className="flex items-center gap-3 w-full px-3 py-2 rounded-lg text-gray-300 hover:bg-white/10 transition-all"
         >
-          <LogOut size={20} />
-          <span className="font-medium">Logout</span>
+          <LogOut className="w-5 h-5" />
+          <span>Logout</span>
         </button>
       </div>
-    </aside>
+    </div>
   );
 }
