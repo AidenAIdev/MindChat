@@ -23,7 +23,7 @@ interface ConversationDisplay {
 export function ConversationList() {
   const router = useRouter();
   const params = useParams();
-  const currentId = params?.conversationId;
+  const currentId = params?.chatId; // Updated from conversationId to chatId
   const user = useAuthStore((state) => state.user);
   
   const [conversations, setConversations] = useState<ConversationDisplay[]>([]);
@@ -32,15 +32,18 @@ export function ConversationList() {
 
   useEffect(() => {
     const fetchConversations = async () => {
-      if (!user?.profileId || !user?.userType) {
+      if (!user?.profileId || !user?.role) { // Use role from new auth store
         setLoading(false);
         return;
       }
 
       try {
         // Fetch session requests based on user type
+        // Use normalized role logic
+        const isPsychologist = user.role === 'Psychologist' || user.userType === 'psychologist';
+
         let sessionRequests: SessionRequest[];
-        if (user.userType === 'patient') {
+        if (!isPsychologist) {
           sessionRequests = await sessionRequestsService.getByPatient(user.profileId);
         } else {
           sessionRequests = await sessionRequestsService.getByPsychologist(user.profileId);
@@ -65,7 +68,7 @@ export function ConversationList() {
               id: sr.id,
               sessionRequestId: sr.id,
               chatId,
-              name: user.userType === 'patient' ? 'Psychologist' : 'Patient',
+              name: isPsychologist ? 'Patient' : 'Psychologist', // Ideally should fetch name
               lastMessage,
               time: new Date(sr.createdAt).toLocaleDateString(),
               unread: 0,
@@ -83,7 +86,7 @@ export function ConversationList() {
     };
 
     fetchConversations();
-  }, [user?.profileId, user?.userType]);
+  }, [user?.profileId, user?.role, user?.userType]);
 
   const filteredConversations = conversations.filter(conv =>
     conv.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -102,7 +105,7 @@ export function ConversationList() {
                   placeholder="Search conversations..." 
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-9 pr-4 py-2 bg-white/5 border border-white/10 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/50"
+                  className="w-full pl-9 pr-4 py-2 bg-white/5 border border-white/10 rounded-xl text-sm text-white focus:outline-none focus:ring-2 focus:ring-purple-500/50"
                 />
              </div>
         </div>
@@ -152,7 +155,7 @@ export function ConversationList() {
               <div className="flex-1 min-w-0">
                 <div className="flex justify-between items-center mb-1">
                   <div className="flex items-center gap-2">
-                    <p className="font-medium text-sm truncate">{conv.name}</p>
+                    <p className="font-medium text-sm truncate text-white">{conv.name}</p>
                     {conv.status === 'Pending' && (
                       <span className="text-[10px] px-1.5 py-0.5 bg-yellow-500/20 text-yellow-400 rounded">
                         Pending
@@ -163,7 +166,7 @@ export function ConversationList() {
                 </div>
                 <p className={cn(
                   "text-xs truncate",
-                  conv.unread > 0 ? "text-foreground font-medium" : "text-muted-foreground"
+                  conv.unread > 0 ? "text-white font-medium" : "text-muted-foreground"
                 )}>
                   {conv.lastMessage}
                 </p>
