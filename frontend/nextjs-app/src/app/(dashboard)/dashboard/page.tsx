@@ -7,14 +7,51 @@ import { PendingRequests } from "@/components/psychologist/PendingRequests";
 import { AppointmentsList } from "@/components/appointments/AppointmentsList";
 import { SessionRequestsList } from "@/components/patient/SessionRequestsList";
 import { PsychologistDebug } from "@/components/debug/PsychologistDebug";
+import { patientsApi } from "@/lib/api/patients.api";
+import { psychologistsApi } from "@/lib/api/psychologists.api";
 
 export default function DashboardPage() {
-  const user = useAuthStore((state) => state.user);
+  const { user, updateUser } = useAuthStore();
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  // Lazy load profile ID if missing
+  useEffect(() => {
+    const fetchProfile = async () => {
+        if (!user || user.profileId || !user.userId) return;
+
+        try {
+            console.log('🔄 Lazy loading profile for user:', user.userId);
+            let profileData: any;
+
+            if (user.role === 'Patient' || user.userType === 'patient') {
+                const response = await patientsApi.getByUserId(user.userId);
+                profileData = response.data;
+            } else {
+                const response = await psychologistsApi.getByUserId(user.userId);
+                profileData = response.data;
+            }
+
+            if (profileData && profileData.profileId) {
+                console.log('✅ Profile loaded:', profileData.profileId);
+                updateUser({
+                    profileId: profileData.profileId,
+                    firstName: profileData.firstName || user.firstName,
+                    lastName: profileData.lastName || user.lastName
+                });
+            }
+        } catch (error) {
+            console.error('❌ Failed to load profile:', error);
+        }
+    };
+
+    if (mounted && user) {
+        fetchProfile();
+    }
+  }, [mounted, user, updateUser]);
 
   if (!mounted) return null;
 

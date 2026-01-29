@@ -14,8 +14,6 @@ import { Input } from "../ui/input";
 import { AlertCircle, Loader2 } from "lucide-react";
 import apiClient from "@/lib/api/client";
 import { cn } from "@/lib/utils";
-import { patientsApi } from "@/lib/api/patients.api";
-import { psychologistsApi } from "@/lib/api/psychologists.api";
 
 const loginSchema = z.object({
   email: z.string().email("Invalid email format"),
@@ -65,24 +63,6 @@ export function LoginForm() {
         localStorage.setItem('authToken', data.token);
         document.cookie = `authToken=${data.token}; path=/; max-age=86400`;
         
-        let profileId = data.profileId;
-        let profileData: any = {};
-
-        // Fetch profile to get profileId if missing or to ensure we have it
-        try {
-            if (data.role === 'Patient' || userType === 'patient') {
-                const profileRes = await patientsApi.getByUserId(data.userId);
-                profileId = profileRes.data.profileId;
-                profileData = profileRes.data;
-            } else if (data.role === 'Psychologist' || userType === 'psychologist') {
-                const profileRes = await psychologistsApi.getByUserId(data.userId);
-                profileId = profileRes.data.profileId;
-                profileData = profileRes.data;
-            }
-        } catch (err) {
-            console.error("Failed to fetch profile", err);
-        }
-
         // Parse user data from response
         const nameParts = data.fullName?.split(' ') || ['User'];
 
@@ -93,11 +73,11 @@ export function LoginForm() {
 
         login({ 
           userId: data.userId,
-          profileId: profileId,
+          profileId: data.profileId, // Use what backend sends, even if null/undefined
           email: data.email, 
           role: finalRole,
-          firstName: profileData.firstName || nameParts[0],
-          lastName: profileData.lastName || nameParts.slice(1).join(' ') || '',
+          firstName: nameParts[0],
+          lastName: nameParts.slice(1).join(' ') || '',
           // Legacy mapping
           id: data.userId,
           userType: finalRole === 'Psychologist' ? 'psychologist' : 'patient',
